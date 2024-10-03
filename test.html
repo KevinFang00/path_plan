@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Maps API Demo</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXRhP4nVsTC4bQybzwxEbf8z1xKyzsAUs"></script>
+    <style>
+      #map {
+        height: 400px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="responseData"></p>
+    <!-- 新增表單輸入目的地經度和緯度 -->
+    <form id="locationForm">
+      <label for="endLatitude">目的地緯度:</label>
+      <input type="text" id="endLatitude" name="endLatitude" />
+      <label for="endLongitude">目的地經度:</label>
+      <input type="text" id="endLongitude" name="endLongitude" />
+    </form>
+
+    <div id="map"></div>
+
+    <script>
+      var startLatitude = 22.7269783;
+      var startLongitude = 120.3298645;
+      var endLatitude = 0.0;
+      var endLongitude = 0.0;
+
+      function sendPostRequest() {
+        var url = "https://vcbkalbh84.execute-api.us-east-1.amazonaws.com/ab/";
+        var data = JSON.stringify({
+          key: String("receive"),
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            var responseData = JSON.parse(xhr.responseText);
+            //現在位置改變
+            if (
+              startLatitude != responseData.lat ||
+              startLongitude != responseData.lon
+            ) {
+              startLatitude = responseData.lat;
+              startLongitude = responseData.lon;
+              //有收到經緯度
+              if (startLatitude != 0 && startLongitude != 0) {
+                document.getElementById("responseData").innerText =
+                  "緯度: " + responseData.lat + "  經度: " + responseData.lon;
+                //目的位置輸入有誤
+                if (
+                  isNaN(
+                    parseFloat(document.getElementById("endLatitude").value)
+                  ) ||
+                  isNaN(
+                    parseFloat(document.getElementById("endLongitude").value)
+                  ) ||
+                  endLongitude == 0 ||
+                  endLongitude == 0
+                ) {
+                  initMap();
+                } else {
+                  if (
+                    isgoal(
+                      calculateDistance(
+                        startLatitude,
+                        startLongitude,
+                        endLatitude,
+                        endLongitude
+                      )
+                    )
+                  )
+                    alert("已到達目的地");
+                  else showRoute();
+                }
+                //目的位置沒變
+                if (
+                  endLatitude ==
+                    parseFloat(document.getElementById("endLatitude").value) &&
+                  endLongitude ==
+                    parseFloat(document.getElementById("endLongitude").value)
+                ) {
+                  if (
+                    isgoal(
+                      calculateDistance(
+                        startLatitude,
+                        startLongitude,
+                        endLatitude,
+                        endLongitude
+                      )
+                    )
+                  )
+                    alert("已到達目的地");
+                  else showRoute();
+                }
+              }
+              //未收到經緯度
+              else {
+                document.getElementById("responseData").innerText =
+                  "未取得模組位置";
+              }
+            }
+            //現在位置沒變
+            else {
+              if (
+                isNaN(
+                  parseFloat(document.getElementById("endLatitude").value)
+                ) ||
+                isNaN(
+                  parseFloat(document.getElementById("endLongitude").value)
+                ) ||
+                (endLatitude ==
+                  parseFloat(document.getElementById("endLatitude").value) &&
+                  endLongitude ==
+                    parseFloat(document.getElementById("endLongitude").value))
+              ) {
+                return;
+              }
+              //目的位置改變
+              else {
+                if (
+                  isgoal(
+                    calculateDistance(
+                      startLatitude,
+                      startLongitude,
+                      endLatitude,
+                      endLongitude
+                    )
+                  )
+                )
+                  alert("已到達目的地");
+                else showRoute();
+              }
+            }
+          }
+        };
+        xhr.send(data);
+      }
+
+      // 顯示導航路線的函數
+      function showRoute() {
+        endLatitude = parseFloat(document.getElementById("endLatitude").value);
+        endLongitude = parseFloat(
+          document.getElementById("endLongitude").value
+        );
+        var directionsService = new google.maps.DirectionsService();
+        var directionsRenderer = new google.maps.DirectionsRenderer();
+        var map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 12,
+          center: { lat: startLatitude, lng: startLongitude },
+        });
+
+        directionsRenderer.setMap(map);
+
+        var request = {
+          origin: { lat: startLatitude, lng: startLongitude },
+          destination: { lat: endLatitude, lng: endLongitude },
+          travelMode: "WALKING",
+        };
+
+        directionsService.route(request, function (result, status) {
+          if (status == "OK") {
+            directionsRenderer.setDirections(result);
+          } else {
+            alert("無法計算路線：");
+          }
+        });
+      }
+      setInterval(sendPostRequest, 10000);
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 15,
+          center: { lat: startLatitude, lng: startLongitude },
+        });
+        var marker = new google.maps.Marker({
+          position: { lat: startLatitude, lng: startLongitude }, // 設置標記位置
+          map: map, // 設置標記的地圖
+        });
+      }
+      //經緯度換算實際距離
+      function calculateDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371; // 地球半徑(公里)
+        var dLat = deg2rad(lat2 - lat1); // 緯度轉弧度
+        var dLon = deg2rad(lon2 - lon1); // 經度轉弧度
+        var a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2.0) +
+          Math.cos(deg2rad(lat1)) *
+            Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2.0) *
+            Math.sin(dLon / 2.0);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var distance = R * c; //職顯距離（公里）
+
+        return distance;
+      }
+
+      function deg2rad(deg) {
+        return deg * (Math.PI / 180.0);
+      }
+      //距離是否小於10公尺
+      function isgoal(dis) {
+        if (dis < 0.01) return true;
+        else return false;
+      }
+    </script>
+
+    <!-- 載入地圖 -->
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXRhP4nVsTC4bQybzwxEbf8z1xKyzsAUs&callback=initMap"
+    ></script>
+  </body>
+</html>

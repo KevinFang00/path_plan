@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Maps API Demo</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkGO5l0vpT0P1U8kswOAR6Z_TrgqARnqw"></script>
+    <style>
+      #map {
+        height: 400px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="responseData"></p>
+    <!-- 新增表單輸入目的地經度和緯度 -->
+    <form id="locationForm">
+      <label for="startLatitude">起點緯度:</label>
+      <input type="text" id="startLatitude" name="startLatitude" />
+      <label for="startLongitude">起點經度:</label>
+      <input type="text" id="startLongitude" name="startLongitude" />
+      <label for="endLatitude">目的地緯度:</label>
+      <input type="text" id="endLatitude" name="endLatitude" />
+      <label for="endLongitude">目的地經度:</label>
+      <input type="text" id="endLongitude" name="endLongitude" />
+    </form>
+    <button onclick="showRoute()">點擊我</button>
+
+    <div id="map"></div>
+
+    <script>
+      var startLatitude = 22.702;
+      var startLongitude = 120.2529;
+      var endLatitude = 22.71;
+      var endLongitude = 120.24;
+
+      initMap();
+
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 15,
+          center: { lat: startLatitude, lng: startLongitude },
+        });
+        var marker = new google.maps.Marker({
+          position: { lat: startLatitude, lng: startLongitude }, // 設置標記位置
+          map: map, // 設置標記的地圖
+        });
+        var marker2 = new google.maps.Marker({
+          position: { lat: endLatitude, lng: endLongitude }, // 設置標記位置
+          map: map, // 設置標記的地圖
+        });
+      }
+
+      function showRoute() {
+        var directionsService = new google.maps.DirectionsService();
+        var directionsRenderer = new google.maps.DirectionsRenderer();
+        var map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 12,
+          center: { lat: startLatitude, lng: startLongitude },
+        });
+
+        directionsRenderer.setMap(map);
+
+        var request = {
+          origin: { lat: startLatitude, lng: startLongitude },
+          destination: { lat: endLatitude, lng: endLongitude },
+          travelMode: "WALKING",
+        };
+
+        directionsService.route(request, function (result, status) {
+          if (status == "OK") {
+            directionsRenderer.setDirections(result);
+          } else {
+            alert("無法計算路線：");
+          }
+        });
+      }
+    </script>
+
+    <!-- 載入地圖 -->
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkGO5l0vpT0P1U8kswOAR6Z_TrgqARnqw&callback=initMap"
+    ></script>
+  </body>
+</html>
